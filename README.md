@@ -70,7 +70,7 @@ All was written on C++, many tests were made, all open, fill free to inspect. If
 ### Useful links
 - [**sandbox-attacksurface-analysis-tools**](https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools)
 - [**processhacker**](https://github.com/processhacker/processhacker)
-- [**WRK (Windows Research Kit)**](https://github.com/jmcjmmcjc/wrk-v1.2)
+- [**WRK (Windows Research Kernel)**](https://github.com/jmcjmmcjc/wrk-v1.2)
 
 ### Collaboration
 I do think current set of tests could be increased. Fill free to open a "push request" in case you have a good tests for related to Windows Access Control.
