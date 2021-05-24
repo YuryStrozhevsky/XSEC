@@ -65,7 +65,7 @@ In order to run XSEC tests you would need to use any Windows and any user, but w
 Detailed description for all XSEC tests you can find in [**this file**](Tests.MD).
 
 ### Documentation
-All was written on C++, many tests were made, all open, fill free to inspect. If you need an "additional documentation" then most probably you need to study C++ 17 first or read a good books about Windows Access Control (like Keith Brown's "Windows Security"). Also please read [**this FAQ**](FAQ.MD).
+All was written on C++, many tests were made, all open, fill free to inspect. If you need an "additional documentation" then most probably you need to study C++ 17 first or read a good books about Windows Access Control (like Keith Brown's "Windows Security"). Also please read [**this FAQ**](FAQ.MD). Also fill free to ask a question in [**Discussions**](https://github.com/YuryStrozhevsky/XSEC/discussions).
 
 ### Useful links
 - [**sandbox-attacksurface-analysis-tools**](https://github.com/googleprojectzero/sandbox-attacksurface-analysis-tools)
