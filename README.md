@@ -27,7 +27,6 @@ So, in order to make studing of Windows Access Control much more productive I pr
 
 ### Example
 ```cpp
-#pragma region [MS-DTYP] 2.4.4.17.9 Example 1: Attributes in Simple Form
 auto [result1, granted_access1, access_status1, granted_access_string1] = check_access(
     L"[MS-DTYP] 2.4.4.17.9 Example 1: Attributes in Simple Form",
     XTOKEN::Create(
@@ -58,7 +57,6 @@ auto [result1, granted_access1, access_status1, granted_access_string1] = check_
 );
 
 Assert::AreEqual(granted_access1[0], (DWORD)FILE_ALL_ACCESS);
-#pragma endregion
 ```
 ### Installation
 In order to run XSEC tests you would need to use any Windows and any user, but with three privileges enabled. In details installation process described in [**this issue**](https://github.com/YuryStrozhevsky/XSEC/issues/1). In order to correctly run XSEC tests read [**this issue**](https://github.com/YuryStrozhevsky/XSEC/issues/2).
