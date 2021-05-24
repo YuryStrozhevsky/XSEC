@@ -1,5 +1,5 @@
 ### XSEC
-XSEC is a project allowing everyone to study very big part of information about Windows Access Control very quick and by real life examples. Making access tokens with unlimited number of groups and privileges, adjust privileges, usage of AccessCheckByTypeResultListAndAuditAlarmByHandle function, parsing all data related to Access Control, store all to XML and many more.
+XSEC is a project allowing everyone to study very big part of information about Windows Access Control very quickly and by real life examples. Making access tokens with unlimited number of groups and privileges, adjust privileges, usage of AccessCheckByTypeResultListAndAuditAlarmByHandle function, parsing all data related to Access Control, store all to XML and many more.
 
 The project consists of two main parts: the XSEC library itself and tests made on top of the XSEC library. The XSEC library could be using in any other projects independently. All code was written on pure C++ 17, without any dependencies from any SDK or DDK.
 
