@@ -7,6 +7,12 @@ The XSEC project is NOT...
  * ...for completely beginners. In order to understand XSEC you need a knowledge about at least what is SID, ACE, what is token and security descriptor;
  * ...for **hackers**. This project is an educational project, this is not a set of utilities. Yes, it could be using for anything, but it is not intended;
 
+### History Of The XSEC
+
+Long time ago I had started my journey studing security (and Windows security as well). There are many useful books about Windows Access Control, but one part is missing - practise. I saw a number of "test plants" related to Windows Access Security - all of them are about making a big nested three of files/directories plus having a separate Windows domain configured. And even with all this efforts performed I cannot say that any user could study all aspects of Windows Access Control using such "test plants".
+
+So, in order to make studing of Windows Access Control much more productive I propose another way - ability to produce any "access tokens", ability to make any security descriptors and then verify access by using a standard Windows API. By doing this we could make **anything**: emulate a "file tree", emulate a "domain user" with any attributes, control all parameters of each ACE in security descriptor and many-many more! This is all done in scope of XSEC project.
+
 ### Features
 - Pure C++ 17 only;
 - No need for any external sources. No DDK, SDK or external libraries. Only XSEC and standard DLLs already exist on each Windows;
