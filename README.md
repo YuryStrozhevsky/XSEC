@@ -73,7 +73,7 @@ All was written on C++, many tests were made, all open, fill free to inspect. If
 - [**WRK (Windows Research Kernel)**](https://github.com/jmcjmmcjc/wrk-v1.2)
 
 ### Collaboration
-I do think current set of tests could be increased. Fill free to open a "pull request" in case you have a good tests for related to Windows Access Control.
+I do think current set of tests could be increased. Fill free to open a "pull request" in case you have a good tests related to Windows Access Control.
 
 ### License
 XSEC library
