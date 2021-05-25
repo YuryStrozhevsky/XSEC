@@ -1,4 +1,14 @@
 ### XSEC Tests
+The idea behind XSEC test is that for studing Windows Access Control subsustem all we need are these three things:
+1. Need an ability to make any "access token" from pre-stored data
+2. Need an ability to make any "security descriptor" from pre-stored data
+3. Need an ability to verify an access result (could the particular "access token" have any access to particular "security descriptor") using a standard Windows API "access control" function
+
+The XSEC library itself implement first two items, the third item is realized inside XSEC tests (by using AccessCheckByTypeResultListAndAuditAlarmByHandle function).
+
+The XSEC tests are a set of tests which cover all possible situation related to Windows Access Control subsystem. The amount of tests will (most probably) increase.
+
+
 1. BASIC
 
     1. The “null DACL”
