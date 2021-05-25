@@ -1313,7 +1313,7 @@ namespace XSECTests
 			};
 
 			auto [result, granted_access, access_status, granted_access_string] = check_access(
-				L"Object List test example",
+				L"Object List test example with ACCESS_DENIED_CALLBACK_OBJECT_ACE and ACCESS_ALLOWED_CALLBACK_OBJECT_ACE types",
 				XTOKEN::Create(XSID::CurrentUser),
 				sd,
 				(DWORD)XBITSET<32>{ "11111", DwordMeaningActiveDirectoryObject },
