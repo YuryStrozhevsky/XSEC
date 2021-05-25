@@ -9,9 +9,9 @@ The XSEC project is NOT...
 
 ### History Of The XSEC
 
-Long time ago I had started my journey studing security (and Windows security as well). There are many useful books about Windows Access Control, but one part is missing - practise. I saw a number of "test plants" related to Windows Access Security - all of them are about making a big nested three of files/directories plus having a separate Windows domain configured. And even with all this efforts performed I cannot say that any user could study all aspects of Windows Access Control using such "test plants".
+Long time ago I had started my journey studding security (and Windows security as well). There are many useful books about Windows Access Control, but one part is missing - practice. I saw a number of "test plants" related to Windows Access Security - all of them are about making a big nested three of files/directories plus having a separate Windows domain configured. And even with all this efforts performed I cannot say that any user could study all aspects of Windows Access Control using such "test plants".
 
-So, in order to make studing of Windows Access Control much more productive I propose another way - ability to produce any "access tokens", ability to make any security descriptors and then verify access by using a standard Windows API. By doing this we could make **anything**: emulate a "file tree", emulate a "domain user" with any attributes, control all parameters of each ACE in security descriptor and many-many more! This is all done in scope of XSEC project.
+So, in order to make studding of Windows Access Control much more productive I propose another way - ability to produce any "access tokens", ability to make any security descriptors and then verify access by using a standard Windows API. By doing this we could make anything: emulate a "file tree", emulate a "domain user" with any attributes, control all parameters of each ACE in security descriptor and many-many more! This is all done in scope of XSEC project.
 
 ### Features
 - Pure C++ 17 only;
