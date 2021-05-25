@@ -53,7 +53,7 @@ std::tuple<BOOL, std::vector<DWORD>, std::vector<DWORD>, std::vector<std::string
 	#pragma endregion
 
 	#pragma region Set a correct "mapping" values
-	if (zero_mapping)
+	if(zero_mapping)
 		mapping = { 0x00 };
 	else
 	{
@@ -70,7 +70,7 @@ std::tuple<BOOL, std::vector<DWORD>, std::vector<DWORD>, std::vector<std::string
 
 	GUID zero = { 0x00000000, 0x0000, 0x0000, { 0x00, 0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00 } };
 
-	if (object_list_value.size() == 0)
+	if(object_list_value.size() == 0)
 	{
 		// The object list must have at least one element 
 		// identifying the root object itself
@@ -92,7 +92,7 @@ std::tuple<BOOL, std::vector<DWORD>, std::vector<DWORD>, std::vector<std::string
 	#pragma region Initialize correct "PrincipalSelf" substitute value
 	XSEC::bin_t bin_self;
 	PSID sid_self = NULL;
-	if (self)
+	if(self)
 	{
 		bin_self = (XSEC::bin_t)self.value();
 		sid_self = bin_self.data();
@@ -105,7 +105,7 @@ std::tuple<BOOL, std::vector<DWORD>, std::vector<DWORD>, std::vector<std::string
 
 	#pragma region Make an impersonation token from primary
 	HANDLE dup_token;
-	if (FALSE == DuplicateTokenEx(token, MAXIMUM_ALLOWED, nullptr, SecurityDelegation, TokenImpersonation, &dup_token))
+	if(FALSE == DuplicateTokenEx(token, MAXIMUM_ALLOWED, nullptr, SecurityDelegation, TokenImpersonation, &dup_token))
 		throw std::exception("AccessCheck: cannot duplicate token");
 	#pragma endregion
 
@@ -129,7 +129,7 @@ std::tuple<BOOL, std::vector<DWORD>, std::vector<DWORD>, std::vector<std::string
 		access_status.data(),
 		&GenerateOnClose
 	);
-	if (FALSE == check_result)
+	if(FALSE == check_result)
 	{
 		std::stringstream stream;
 		stream << "AccessCheck: error during a check, #" << GetLastError() << "\n";
@@ -149,7 +149,7 @@ namespace XSECTests
 	TEST_CLASS(XSECTests)
 	{
 	public:
-
+		
 		#pragma region Common variables
 		XSID fiction_owner{ L"S-1-5-21-3522493417-3251241581-1305895453-513" }; // Fiction owner (in order to exclude additional "common access rights" in case owner are equal with token's owner)
 		XSID fiction_group{ L"S-1-5-21-3522493417-3251241581-1305895453-514" };
@@ -161,13 +161,13 @@ namespace XSECTests
 
 			HANDLE token;
 
-			if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &token))
+			if(!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &token))
 				throw std::exception("XSEC Test: cannot get process token");
 
 			// In order to have audit message generation function working we need to set "SeAuditPrivilege"
 			// in the PROCESS token, NOT in a thread token. So, even if the access check would be
 			// against a context from thread token the "SeAuditPrivilege" MUST be set in PROCESS token.
-			if (FALSE == XTOKEN::ChangePrivileges({ L"SeAuditPrivilege" }, token))
+			if(FALSE == XTOKEN::ChangePrivileges({ L"SeAuditPrivilege" }, token))
 				throw std::exception("XSEC Test: cannot set necessary privileges");
 
 			CloseHandle(token);
@@ -187,7 +187,7 @@ namespace XSECTests
 			auto [result1, granted_access1, access_status1, granted_access_string1] = check_access(
 				L"The 'null DACL'",
 				token,
-				{ fiction_owner },
+				{ fiction_owner	},
 				FILE_ALL_ACCESS
 			);
 
@@ -211,7 +211,7 @@ namespace XSECTests
 				XTOKEN::Create(
 					XSID::CurrentUser,
 					XSID::Everyone,
-					{ { L"SeTakeOwnershipPrivilege" } }
+					{{ L"SeTakeOwnershipPrivilege" }}
 				),
 				{ fiction_owner, { std::initializer_list<XACE>{} } },
 				WRITE_OWNER
@@ -241,25 +241,25 @@ namespace XSECTests
 					XSID::CurrentUser,
 					fiction_group
 				),
-				{
-					fiction_owner,
+				{ 
+					fiction_owner, 
 					{{
 						XACCESS_DENIED_ACE(
 							XSID::CurrentUser,
 							(DWORD)FILE_READ_ACCESS
 						),
-				// The "Everyone" group cannot be using as a "all users in the world" always.
-				// If the "Everyone" group would not exist in token's SIDs then
-				// "Everyone" would not be considered during access checking.
-				XACCESS_ALLOWED_ACE(
-					XSID::Everyone,
-					(DWORD)(FILE_READ_ACCESS | FILE_WRITE_ACCESS)
-				),
-				XACCESS_ALLOWED_ACE(
-					fiction_group,
-					(DWORD)(FILE_READ_ACCESS | FILE_WRITE_ACCESS | FILE_APPEND_DATA)
-				)
-			}}
+						// The "Everyone" group cannot be using as a "all users in the world" always.
+						// If the "Everyone" group would not exist in token's SIDs then
+						// "Everyone" would not be considered during access checking.
+						XACCESS_ALLOWED_ACE(
+							XSID::Everyone,
+							(DWORD)(FILE_READ_ACCESS | FILE_WRITE_ACCESS)
+						),
+						XACCESS_ALLOWED_ACE(
+							fiction_group,
+							(DWORD)(FILE_READ_ACCESS | FILE_WRITE_ACCESS | FILE_APPEND_DATA)
+						)
+					}}
 				},
 				FILE_READ_ACCESS | FILE_WRITE_ACCESS | FILE_APPEND_DATA
 			);
@@ -332,8 +332,8 @@ namespace XSECTests
 					{},
 					{ { fiction_group, (DWORD)0 } }
 				),
-				{
-					fiction_owner,
+				{ 
+					fiction_owner, 
 					{{
 						XACCESS_DENIED_ACE(
 							fiction_group,
@@ -390,26 +390,26 @@ namespace XSECTests
 				{
 					fiction_owner,
 					{{
-							// This ACE would not count because it has "INHERIT_ONLY_ACE" flag set
-							XACCESS_DENIED_ACE(
-								fiction_group,
-								(DWORD)FILE_ALL_ACCESS,
-								{ ByteBitsMeaningAceFlags, { L"INHERIT_ONLY_ACE" } }
-							),
-							XACCESS_ALLOWED_ACE(
-								XSID::Everyone,
-								(DWORD)FILE_ALL_ACCESS,
-								{
-									ByteBitsMeaningAceFlags,
-									{
-										L"INHERITED_ACE", // Simple flag representing the ACE was inhirited 
-										L"OBJECT_INHERIT_ACE", // It will be applicable to all descendant files
-										L"CONTAINER_INHERIT_ACE", // It will be applicable to all descendant folders
-										L"NO_PROPAGATE_INHERIT_ACE" // If the ACE is inherited by a child object, the system clears the OBJECT_INHERIT_ACE and CONTAINER_INHERIT_ACE flags in the inherited ACE. This prevents the ACE from being inherited by subsequent generations of objects
-									}
-								}
-							)
-						}}
+						// This ACE would not count because it has "INHERIT_ONLY_ACE" flag set
+						XACCESS_DENIED_ACE(
+							fiction_group,
+							(DWORD)FILE_ALL_ACCESS,
+							{ ByteBitsMeaningAceFlags, { L"INHERIT_ONLY_ACE" } }
+						),
+						XACCESS_ALLOWED_ACE(
+							XSID::Everyone,
+							(DWORD)FILE_ALL_ACCESS,
+							{ 
+								ByteBitsMeaningAceFlags, 
+								{ 
+									L"INHERITED_ACE", // Simple flag representing the ACE was inhirited 
+									L"OBJECT_INHERIT_ACE", // It will be applicable to all descendant files
+									L"CONTAINER_INHERIT_ACE", // It will be applicable to all descendant folders
+									L"NO_PROPAGATE_INHERIT_ACE" // If the ACE is inherited by a child object, the system clears the OBJECT_INHERIT_ACE and CONTAINER_INHERIT_ACE flags in the inherited ACE. This prevents the ACE from being inherited by subsequent generations of objects
+								} 
+							}
+						)
+					}}
 				},
 				FILE_ALL_ACCESS
 			);
@@ -465,18 +465,18 @@ namespace XSECTests
 						)
 					}},
 					{{
-							// Does not matter which flags to put here: if a mask is in "desired access" then logging would be performed.
-							// In case access was denied (as in this case) it would be "denied message".
-							XSYSTEM_AUDIT_ACE(
-								// Even if we put "Everyone" here audit message have a chance to be suspended.
-								// The audit message would be generated	only if the SID from SYSTEM_AUDIT_ACE exists 
-								// in user's token. So, if there is no "Everyone" SID in token then no audit messages 
-								/// would be generated for "XSYSTEM_AUDIT_ACE(Everyone)".
-								fiction_group,
-								(DWORD)FILE_WRITE_ACCESS,
-								{ ByteBitsMeaningAceFlags, { L"SUCCESSFUL_ACCESS_ACE_FLAG", L"FAILED_ACCESS_ACE_FLAG" } }
-							)
-						}}
+						// Does not matter which flags to put here: if a mask is in "desired access" then logging would be performed.
+						// In case access was denied (as in this case) it would be "denied message".
+						XSYSTEM_AUDIT_ACE(
+							// Even if we put "Everyone" here audit message have a chance to be suspended.
+							// The audit message would be generated	only if the SID from SYSTEM_AUDIT_ACE exists 
+							// in user's token. So, if there is no "Everyone" SID in token then no audit messages 
+							/// would be generated for "XSYSTEM_AUDIT_ACE(Everyone)".
+							fiction_group,
+							(DWORD)FILE_WRITE_ACCESS,
+							{ ByteBitsMeaningAceFlags, { L"SUCCESSFUL_ACCESS_ACE_FLAG", L"FAILED_ACCESS_ACE_FLAG" } }
+						)
+					}}
 				},
 				FILE_READ_ACCESS | FILE_WRITE_ACCESS
 			);
@@ -504,13 +504,13 @@ namespace XSECTests
 						)
 					}},
 					{{
-							// Audit message would not be generated due to missing "FAILED_ACCESS_ACE_FLAG" flag
-							XSYSTEM_AUDIT_ACE(
-								fiction_group,
-								(DWORD)FILE_WRITE_ACCESS,
-								{ ByteBitsMeaningAceFlags, { L"SUCCESSFUL_ACCESS_ACE_FLAG" } }
-							)
-						}}
+						// Audit message would not be generated due to missing "FAILED_ACCESS_ACE_FLAG" flag
+						XSYSTEM_AUDIT_ACE(
+							fiction_group,
+							(DWORD)FILE_WRITE_ACCESS,
+							{ ByteBitsMeaningAceFlags, { L"SUCCESSFUL_ACCESS_ACE_FLAG" } }
+						)
+					}}
 				},
 				FILE_READ_ACCESS | FILE_WRITE_ACCESS
 			);
@@ -566,12 +566,12 @@ namespace XSECTests
 			#pragma region Check directory exists and remove it if necessary
 			auto current = std::filesystem::current_path();
 
-			if (std::filesystem::exists(current / "inherited"))
+			if(std::filesystem::exists(current / "inherited"))
 				std::filesystem::remove_all(current / "inherited");
 			#pragma endregion
 
 			#pragma region Create a sample directory with a default security descriptor
-			if (!std::filesystem::create_directory(current / "inherited"))
+			if(!std::filesystem::create_directory(current / "inherited"))
 				throw std::exception("Cannot make 'inherited' directory");
 			#pragma endregion
 
@@ -589,7 +589,7 @@ namespace XSECTests
 			bin_t bin = (bin_t)sd;
 
 			BOOL result = SetFileSecurity(L"inherited", DACL_SECURITY_INFORMATION, (PSECURITY_DESCRIPTOR)bin.data());
-			if (FALSE == result)
+			if(FALSE == result)
 			{
 				std::stringstream stream;
 				stream << "Error on changing SD: " << GetLastError();
@@ -647,13 +647,13 @@ namespace XSECTests
 			);
 
 			HANDLE dup_token;
-			if (FALSE == DuplicateTokenEx(token, MAXIMUM_ALLOWED, nullptr, SecurityDelegation, TokenImpersonation, &dup_token))
+			if(FALSE == DuplicateTokenEx(token, MAXIMUM_ALLOWED, nullptr, SecurityDelegation, TokenImpersonation, &dup_token))
 				throw std::exception("Cannot duplicate token");
 
-			if (FALSE == SetThreadToken(nullptr, dup_token))
+			if(FALSE == SetThreadToken(nullptr, dup_token))
 				throw std::exception("Cannot set token for thread");
 
-			if (!std::filesystem::create_directory(current / "inherited/subdirectory"))
+			if(!std::filesystem::create_directory(current / "inherited/subdirectory"))
 				throw std::exception("Cannot make 'inherited' directory");
 
 			#pragma region Create a file using "manually made" token
@@ -694,7 +694,7 @@ namespace XSECTests
 						{ XSID::UntrustedMandatoryLevel, { SidAndAttributesMeaningDefault, { L"SE_GROUP_INTEGRITY", L"SE_GROUP_INTEGRITY_ENABLED" } }}
 					}
 				),
-				{
+				{ 
 					fiction_owner,
 					std::nullopt,
 					{{
@@ -834,36 +834,36 @@ namespace XSECTests
 				{
 					{ XSID::MediumMandatoryLevel, { SidAndAttributesMeaningDefault, { L"SE_GROUP_INTEGRITY", L"SE_GROUP_INTEGRITY_ENABLED" } }}
 				}
-				);
+			);
 
 			DWORD attributes = 0;
 
-			for (auto&& element : XTOKEN::GetTokenInfo<TokenPrivileges>(token))
+			for(auto&& element : XTOKEN::GetTokenInfo<TokenPrivileges>(token))
 				attributes += (DWORD)*element.Attributes;
 
 			Assert::AreEqual(attributes, (DWORD)0);
 
 			// It is also not able to set these privileges to any value other than 0
 			auto change_result = XTOKEN::ChangePrivileges(
-				{
-					L"SeCreateTokenPrivilege",
-					L"SeTcbPrivilege",
-					L"SeTakeOwnershipPrivilege",
-					L"SeLoadDriverPrivilege",
-					L"SeBackupPrivilege",
-					L"SeRestorePrivilege",
-					L"SeDebugPrivilege",
-					L"SeImpersonatePrivilege",
-					L"SeRelabelPrivilege",
+				{ 
+					L"SeCreateTokenPrivilege", 
+					L"SeTcbPrivilege", 
+					L"SeTakeOwnershipPrivilege", 
+					L"SeLoadDriverPrivilege", 
+					L"SeBackupPrivilege", 
+					L"SeRestorePrivilege", 
+					L"SeDebugPrivilege", 
+					L"SeImpersonatePrivilege", 
+					L"SeRelabelPrivilege", 
 					L"SeDelegateSessionUserImpersonatePrivilege"
-				},
-				token,
+				}, 
+				token, 
 				SE_PRIVILEGE_ENABLED
 			);
 
 			Assert::AreEqual(change_result, TRUE);
 
-			for (auto&& element : XTOKEN::GetTokenInfo<TokenPrivileges>(token))
+			for(auto&& element : XTOKEN::GetTokenInfo<TokenPrivileges>(token))
 				attributes += (DWORD)*element.Attributes;
 
 			Assert::AreEqual(attributes, (DWORD)0);
@@ -887,11 +887,11 @@ namespace XSECTests
 				{
 					{ XSID::HighMandatoryLevel, { SidAndAttributesMeaningDefault, { L"SE_GROUP_INTEGRITY", L"SE_GROUP_INTEGRITY_ENABLED" } }}
 				}
-				);
+			);
 
 			bool enabled = true;
 
-			for (auto&& element : XTOKEN::GetTokenInfo<TokenPrivileges>(token_high))
+			for(auto&& element : XTOKEN::GetTokenInfo<TokenPrivileges>(token_high))
 				enabled &= (SE_PRIVILEGE_ENABLED == (DWORD)*element.Attributes);
 
 			Assert::AreEqual(enabled, true);
@@ -915,8 +915,8 @@ namespace XSECTests
 						{{L"Title", { L"VP" }}}
 					}
 				),
-				{
-					fiction_owner,
+				{ 
+					fiction_owner, 
 					{{
 						XACCESS_ALLOWED_CALLBACK_ACE(
 							XSID::Everyone,
@@ -1255,6 +1255,75 @@ namespace XSECTests
 
 			// guid8 ("allows" came from direct ACE, "denies" from direct ACE)
 			Assert::AreEqual(granted_access_string[7], std::string("00000000000000000000000000000010"));
+		}
+
+		TEST_METHOD(CALLBACK_OBJECT_ACE)
+		{
+			// This is a special test in order to show a problem described in
+			// https://docs.microsoft.com/en-us/answers/questions/398948/ms-dtyp-access-allowed-callback-object-ace-and-acc.html
+
+			auto guid1 = (GUID)XGUID::Create();
+
+			std::vector<OBJECT_TYPE_LIST> list = {
+				{ 0, 0, &guid1 }
+			};
+
+			XSD sd{
+				fiction_owner,
+				{{
+					XACCESS_DENIED_CALLBACK_OBJECT_ACE(
+						XSID::Everyone,
+						{ "00001", DwordMeaningActiveDirectoryObject },
+						std::nullopt,
+						guid1
+					),
+					XACCESS_DENIED_CALLBACK_OBJECT_ACE(
+						XSID::Everyone,
+						{ "00010", DwordMeaningActiveDirectoryObject },
+						XResource(L"boolean"),
+						guid1
+					),
+					XACCESS_DENIED_CALLBACK_OBJECT_ACE(
+						XSID::Everyone,
+						{ "00100", DwordMeaningActiveDirectoryObject }
+					),
+					XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+						XSID::Everyone,
+						{ "10000", DwordMeaningActiveDirectoryObject },
+						std::nullopt,
+						guid1
+					),
+					XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+						XSID::Everyone,
+						{ "01000", DwordMeaningActiveDirectoryObject },
+						XResource(L"boolean"),
+						guid1
+					),
+					XACCESS_ALLOWED_ACE(
+						XSID::Everyone,
+						{ "11111", DwordMeaningActiveDirectoryObject }
+					)
+				}},
+				{{
+					XSYSTEM_RESOURCE_ATTRIBUTE_ACE(
+						{{ L"boolean", { true }}}
+					)
+				}},
+				fiction_group
+			};
+
+			auto [result, granted_access, access_status, granted_access_string] = check_access(
+				L"Object List test example",
+				XTOKEN::Create(XSID::CurrentUser),
+				sd,
+				(DWORD)XBITSET<32>{ "11111", DwordMeaningActiveDirectoryObject },
+				false,
+				list
+			);
+
+			// Dispite the fact that there are ACEs specified particular access for "guid1" the granted
+			// access is still from latest ACE with type "ACCESS_ALLOWED_ACE"
+			Assert::AreEqual(granted_access_string[0], std::string("00000000000000000000000000011111"));
 		}
 	};
 }
