@@ -642,20 +642,22 @@ namespace XSEC
 		#pragma region ApplicationData
 		bin_t temp;
 		std::copy(data.begin() + start + ((bin_t)*Sid).size(), data.end(), std::back_inserter(temp));
-
-		if(temp.size())
-			ApplicationData = std::make_shared<bin_t>(temp);
 		#pragma endregion
 
 		#pragma region Additional structures based on ApplicationData
-		switch(Type)
+		if(temp.size())
 		{
-			case ACCESS_ALLOWED_CALLBACK_OBJECT_ACE_TYPE:
-			case ACCESS_DENIED_CALLBACK_OBJECT_ACE_TYPE:
-			case SYSTEM_AUDIT_CALLBACK_OBJECT_ACE_TYPE:
-				ConditionalExpression = std::make_shared<XCONDITIONAL_EXPRESSION>(*ApplicationData);
-				break;
-			default:;
+			ApplicationData = std::make_shared<bin_t>(temp);
+
+			switch(Type)
+			{
+				case ACCESS_ALLOWED_CALLBACK_OBJECT_ACE_TYPE:
+				case ACCESS_DENIED_CALLBACK_OBJECT_ACE_TYPE:
+				case SYSTEM_AUDIT_CALLBACK_OBJECT_ACE_TYPE:
+					ConditionalExpression = std::make_shared<XCONDITIONAL_EXPRESSION>(*ApplicationData);
+					break;
+				default:;
+			}
 		}
 		#pragma endregion
 	}

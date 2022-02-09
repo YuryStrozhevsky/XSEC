@@ -1071,6 +1071,28 @@ namespace XSEC
 		{L"GENERIC_READ", L""},
 	} };
 
+	//
+	// LsaGetSystemAccessAccount
+	//
+	//// Security System Access Flags.  These correspond to the enumerated
+	//// type values in SECURITY_LOGON_TYPE.
+	////
+	//// IF YOU ADD A NEW LOGON TYPE HERE, ALSO ADD IT TO THE POLICY_MODE_xxx
+	//// data definitions.
+	////
+
+	//#define SECURITY_ACCESS_INTERACTIVE_LOGON             ((ULONG) 0x00000001L)
+	//#define SECURITY_ACCESS_NETWORK_LOGON                 ((ULONG) 0x00000002L)
+	//#define SECURITY_ACCESS_BATCH_LOGON                   ((ULONG) 0x00000004L)
+	//#define SECURITY_ACCESS_SERVICE_LOGON                 ((ULONG) 0x00000010L)
+	//#define SECURITY_ACCESS_PROXY_LOGON                   ((ULONG) 0x00000020L)
+	//#define SECURITY_ACCESS_DENY_INTERACTIVE_LOGON        ((ULONG) 0x00000040L)
+	//#define SECURITY_ACCESS_DENY_NETWORK_LOGON            ((ULONG) 0x00000080L)
+	//#define SECURITY_ACCESS_DENY_BATCH_LOGON              ((ULONG) 0x00000100L)
+	//#define SECURITY_ACCESS_DENY_SERVICE_LOGON            ((ULONG) 0x00000200L)
+	//#define SECURITY_ACCESS_REMOTE_INTERACTIVE_LOGON      ((ULONG) 0x00000400L)
+	//#define SECURITY_ACCESS_DENY_REMOTE_INTERACTIVE_LOGON ((ULONG) 0x00000800L)
+
 	const dword_meaning_t DwordMeaningAceType2Flags = { {
 		{L"ACE_OBJECT_TYPE_PRESENT", L"ObjectType is present and contains a GUID. If this value is not specified, the InheritedObjectType member follows immediately after the Flags member."},
 		{L"ACE_INHERITED_OBJECT_TYPE_PRESENT", L"InheritedObjectType is present and contains a GUID. If this value is not specified, all types of child objects can inherit the ACE."},
@@ -1205,6 +1227,39 @@ namespace XSEC
 		{ L"", L"" },
 		{ L"", L"" },
 		{ L"", L"" }
+	} };
+
+	const dword_meaning_t DwordMeaningAuditRights = { {
+		{L"AUDIT_SET_SYSTEM_POLICY", L""},
+		{L"AUDIT_QUERY_SYSTEM_POLICY", L""},
+		{L"AUDIT_SET_USER_POLICY", L""},
+		{L"AUDIT_QUERY_USER_POLICY", L""},
+		{L"AUDIT_ENUMERATE_USERS", L""},
+		{L"AUDIT_SET_MISC_POLICY", L""},
+		{L"AUDIT_QUERY_MISC_POLICY", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
+		{L"", L""},
 	} };
 	//****************************************************************************************
 	#pragma endregion

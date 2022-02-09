@@ -1623,6 +1623,11 @@ namespace XSEC
 	//****************************************************************************************
 	XCONDITIONAL_EXPRESSION::XCONDITIONAL_EXPRESSION(const bin_t& data)
 	{
+		#pragma region Check input data
+		if(0 == data.size())
+			throw std::exception("XCONDITIONAL_EXPRESSION: invalid header");
+		#pragma endregion
+
 		#pragma region Check data header
 		if((data[0] != 0x61) || (data[1] != 0x72) || (data[2] != 0x74) || (data[3] != 0x78))
 			throw std::exception("XCONDITIONAL_EXPRESSION: invalid header");

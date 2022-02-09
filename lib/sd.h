@@ -54,6 +54,7 @@ namespace XSEC
 
 		static XSD GetFromKernelObject(const HANDLE&, const std::optional<XBITSET<32>> = std::nullopt, const dword_meaning_t& = DwordMeaningToken);
 		static XSD GetFromFileObject(const std::wstring&, const std::optional<XBITSET<32>> = std::nullopt, const dword_meaning_t& = DwordMeaningFile);
+		static XSD GetFromLSAObject(const HANDLE&, const std::optional<XBITSET<32>> = std::nullopt, const dword_meaning_t& = DwordMeaningLSAPolicy);
 
 		unsigned char Revision = 1;
 		std::shared_ptr<XBITSET<16>> Control;
@@ -163,6 +164,64 @@ namespace XSEC
 		#pragma endregion
 
 		return XSD((unsigned char*)sd.get(), meaning);
+	}
+	//********************************************************************************************
+	XSD XSD::GetFromLSAObject(const HANDLE& handle, const std::optional<XBITSET<32>> _flags, const dword_meaning_t& meaning)
+	{
+		#pragma region Initial variables
+		DWORD length = 0;
+		DWORD flags = 0xFFFFFFFF;
+
+		bool found = false;
+
+		PSECURITY_DESCRIPTOR sd = nullptr;
+		#pragma endregion
+
+		#pragma region Initialize necessary functions
+		HMODULE adv_dll = LoadLibraryW(L"advapi32.dll");
+		if(!adv_dll)
+			throw std::exception("XSD: cannot load advapi32.dll");
+
+		typedef NTSTATUS(NTAPI* LSAQSO)(
+			HANDLE,
+			SECURITY_INFORMATION,
+			PSECURITY_DESCRIPTOR*
+		);
+
+		LSAQSO LsaQuerySecurityObject = (LSAQSO)GetProcAddress(adv_dll, "LsaQuerySecurityObject");
+		if(!LsaQuerySecurityObject)
+			throw std::exception("XSD: cannot init LsaQuerySecurityObject");
+		#pragma endregion
+
+		#pragma region Find a maximum allowed security information to query
+		if(_flags)
+		{
+			flags = (DWORD)_flags.value();
+
+			auto status = LsaQuerySecurityObject(handle, flags, &sd);
+			if(STATUS_SUCCESS == status)
+				found = true;
+		}
+		else
+		{
+			while(flags)
+			{
+				sd = nullptr;
+
+				auto status = LsaQuerySecurityObject(handle, flags, &sd);
+				if(STATUS_SUCCESS == status)
+				{
+					found = true;
+					break;
+				}
+			};
+		}
+
+		if(false == found)
+			throw std::exception("XSD: cannot get security descriptor for the file object");
+		#pragma endregion
+
+		return XSD((unsigned char*)sd, meaning);
 	}
 	//********************************************************************************************
 	XSD::XSD(const unsigned char* data, const dword_meaning_t& meaning)

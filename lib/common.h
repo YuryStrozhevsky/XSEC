@@ -217,6 +217,19 @@ namespace XSEC
 		xml->save(path.c_str());
 	}
 	//********************************************************************************************
+	template<typename T>
+	void XSave_bin(const T& element, const std::string& path)
+	{
+		std::ofstream file(path, std::ios_base::binary);
+		std::ostream_iterator<char> _out_iterator(file);
+
+		auto data = (bin_t)element;
+		std::copy(data.data(), data.data() + data.size(), *_out_iterator);
+
+		file.flush();
+		file.close();
+	}
+	//********************************************************************************************
 	template<typename T, typename... Types>
 	T XLoad(const std::wstring& path, Types&&... args)
 	{

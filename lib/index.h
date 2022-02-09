@@ -36,6 +36,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <map>
 #include <algorithm>
 #include <regex>
+#include <fstream>
 
 #include <windows.h>
 #include <winnt.h>

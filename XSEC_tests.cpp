@@ -25,7 +25,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <tuple>
 #include <filesystem>
-#include <fstream>
+
+#include <authz.h>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace XSEC;
@@ -128,6 +129,161 @@ std::tuple<BOOL, std::vector<DWORD>, std::vector<DWORD>, std::vector<std::string
 		granted_access.data(),
 		access_status.data(),
 		&GenerateOnClose
+	);
+	if(FALSE == check_result)
+	{
+		std::stringstream stream;
+		stream << "AccessCheck: error during a check, #" << GetLastError() << "\n";
+
+		throw std::exception(stream.str().c_str());
+	}
+	#pragma endregion
+
+	std::vector<std::string> granted_access_string;
+	std::transform(granted_access.begin(), granted_access.end(), std::back_inserter(granted_access_string), [](DWORD value) -> std::string { return std::bitset<32>(value).to_string();	});
+
+	return std::make_tuple(check_result, granted_access, access_status, granted_access_string);
+}
+//********************************************************************************
+BOOL WINAPI CheckCallback(AUTHZ_CLIENT_CONTEXT_HANDLE hAuthzClientContext, PACE_HEADER pAce, PVOID pArgs, PBOOL pbAceApplicable)
+{
+	*pbAceApplicable = TRUE;
+	return TRUE;
+}
+//********************************************************************************
+std::tuple<BOOL, std::vector<DWORD>, std::vector<DWORD>, std::vector<std::string>> check_access_authz(
+	const std::wstring name,
+	const HANDLE& token,
+	const XSEC::XSD& sd,
+	DWORD desired_access,
+	bool zero_mapping = false,
+	std::optional<std::vector<OBJECT_TYPE_LIST>> object_type_list = std::nullopt,
+	std::optional<XSEC::XSID> self = std::nullopt
+)
+{
+	#pragma region Initial variables
+	BOOL check_result = FALSE;
+
+	PRIVILEGE_SET privileges = { 0 };
+	DWORD privileges_length = sizeof(privileges);
+
+	BOOL GenerateOnClose = FALSE;
+
+	GENERIC_MAPPING mapping;
+	#pragma endregion
+
+	#pragma region Set a correct "mapping" values
+	if(zero_mapping)
+		mapping = { 0x00 };
+	else
+	{
+		mapping = { 0xFFFFFFFF };
+		mapping.GenericRead = FILE_GENERIC_READ;
+		mapping.GenericWrite = FILE_GENERIC_WRITE;
+		mapping.GenericExecute = FILE_GENERIC_EXECUTE;
+		mapping.GenericAll = FILE_ALL_ACCESS;
+	}
+	#pragma endregion
+
+	#pragma region Initialize values related to "object list"
+	std::vector<OBJECT_TYPE_LIST> object_list_value = object_type_list.value_or(std::vector<OBJECT_TYPE_LIST>{});
+
+	GUID zero = { 0x00000000, 0x0000, 0x0000, { 0x00, 0x00,  0x00,  0x00,  0x00,  0x00,  0x00,  0x00 } };
+
+	if(object_list_value.size() == 0)
+	{
+		// The object list must have at least one element 
+		// identifying the root object itself
+		object_list_value.push_back({
+			0,
+			0,
+			&zero
+			});
+	}
+	#pragma endregion
+
+	#pragma region Initialize "result values"
+	size_t size = object_list_value.size();
+
+	std::vector<DWORD> granted_access(size, 0);
+	std::vector<DWORD> access_status(size, 0);
+
+	std::vector<DWORD> sacl_eval_results(size, 0);
+	std::vector<DWORD> errors(size, 0);
+	#pragma endregion
+
+	#pragma region Initialize correct "PrincipalSelf" substitute value
+	XSEC::bin_t bin_self;
+	PSID sid_self = NULL;
+	if(self)
+	{
+		bin_self = (XSEC::bin_t)self.value();
+		sid_self = bin_self.data();
+	}
+	#pragma endregion
+
+	#pragma region Convert security descriptor into binary format
+	auto bin = (XSEC::bin_t)sd;
+	#pragma endregion
+
+	#pragma region Make an impersonation token from primary
+	HANDLE dup_token;
+	if(FALSE == DuplicateTokenEx(token, MAXIMUM_ALLOWED, nullptr, SecurityDelegation, TokenImpersonation, &dup_token))
+		throw std::exception("AccessCheck: cannot duplicate token");
+	#pragma endregion
+
+	#pragma region Check access
+	AUTHZ_RESOURCE_MANAGER_HANDLE   AuthzResMgrHandle = NULL;
+	AUTHZ_CLIENT_CONTEXT_HANDLE     AuthzClientHandle = NULL;
+	LUID                            ZeroLuid = { 0, 0 };
+	AUTHZ_ACCESS_REQUEST            AccessRequest = { 
+		desired_access,
+		sid_self,
+		object_list_value.data(),
+		object_list_value.size(),
+		NULL
+	};
+	AUTHZ_ACCESS_REPLY AccessReply = { 0 };
+	AccessReply.ResultListLength = object_list_value.size();
+	AccessReply.GrantedAccessMask = granted_access.data();
+	AccessReply.SaclEvaluationResults = sacl_eval_results.data();
+	AccessReply.Error = errors.data();
+
+	if(!AuthzInitializeResourceManager(
+			AUTHZ_RM_FLAG_NO_AUDIT,			
+			NULL, //CheckCallback,
+			NULL,
+			NULL,
+			NULL,
+			&AuthzResMgrHandle
+		))
+	{
+		throw std::exception("AuthzInitializeResourceManager: error");
+	}
+
+	if(!AuthzInitializeContextFromToken(
+			0,
+			dup_token,
+			AuthzResMgrHandle,
+			NULL,
+			ZeroLuid,
+			NULL,
+			&AuthzClientHandle
+		))
+	{
+		throw std::exception("AuthzInitializeContextFromToken: error");
+	}
+
+	check_result = AuthzAccessCheck(
+		0,
+		AuthzClientHandle,
+		&AccessRequest,
+		NULL,
+		(PSECURITY_DESCRIPTOR)bin.data(),
+		NULL,
+		0,
+		&AccessReply,
+		NULL
 	);
 	if(FALSE == check_result)
 	{
@@ -1259,71 +1415,180 @@ namespace XSECTests
 
 		TEST_METHOD(CALLBACK_OBJECT_ACE)
 		{
-			// This is a special test in order to show a problem described in
-			// https://docs.microsoft.com/en-us/answers/questions/398948/ms-dtyp-access-allowed-callback-object-ace-and-acc.html
+			/*
+			This is an example for https://docs.microsoft.com/en-us/answers/questions/654226/processing-of-aces-inside-authzaccesscheckcallback.html
+			Here you can see that "AuthzAccessCheck" process "object ACEs" different from "AccessCheckByTypeResultListAndAuditAlarmByHandle"
+			And thus "AuthzAccessCheck" is not alligned with official Microsoft documentation (see [MS-ADTS] 5.1.3.3.3) 
+			*/
 
+			#pragma region Advanced test with Callback Object ACEs
 			auto guid1 = (GUID)XGUID::Create();
 
-			std::vector<OBJECT_TYPE_LIST> list = {
-				{ 0, 0, &guid1 }
+			auto guid2 = (GUID)XGUID::Create();
+			auto guid3 = (GUID)XGUID::Create();
+			auto guid4 = (GUID)XGUID::Create();
+
+			auto guid5 = (GUID)XGUID::Create();
+			auto guid6 = (GUID)XGUID::Create();
+			auto guid7 = (GUID)XGUID::Create();
+
+			auto guid8 = (GUID)XGUID::Create();
+
+			//                     --------- 
+			//                     | guid1 | 
+			//                     --------- 
+			//                         |
+			//              ___________|_________________
+			//             /                \            \
+			//            /                  \            \
+			//      ---------               ---------    ---------
+			//      | guid2 |               | guid5 |    | guid8 |
+			//      ---------               ---------    ---------
+			//    /           \           /           \
+			//   /             \         /             \
+			// ---------    ---------  ---------    ---------
+			// | guid3 |    | guid4 |  | guid6 |    | guid7 |
+			// ---------    ---------  ---------    ---------
+
+			std::vector<OBJECT_TYPE_LIST> list_1 = {
+				{ 0, 0, &guid1 },
+
+				{ 1, 0,	&guid2 },
+				{ 2, 0,	&guid3 },
+				{ 2, 0,	&guid4 },
+
+				{ 1, 0,	&guid5 },
+				{ 2, 0,	&guid6 },
+				{ 2, 0,	&guid7 },
+
+				{ 1, 0,	&guid8 }
 			};
 
 			XSD sd{
-				fiction_owner,
-				{{
-					XACCESS_DENIED_CALLBACK_OBJECT_ACE(
-						XSID::Everyone,
-						{ "00001", DwordMeaningActiveDirectoryObject },
-						std::nullopt,
-						guid1
-					),
-					XACCESS_DENIED_CALLBACK_OBJECT_ACE(
-						XSID::Everyone,
-						{ "00010", DwordMeaningActiveDirectoryObject },
-						XResource(L"boolean"),
-						guid1
-					),
-					XACCESS_DENIED_CALLBACK_OBJECT_ACE(
-						XSID::Everyone,
-						{ "00100", DwordMeaningActiveDirectoryObject }
-					),
-					XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
-						XSID::Everyone,
-						{ "10000", DwordMeaningActiveDirectoryObject },
-						std::nullopt,
-						guid1
-					),
-					XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
-						XSID::Everyone,
-						{ "01000", DwordMeaningActiveDirectoryObject },
-						XResource(L"boolean"),
-						guid1
-					),
-					XACCESS_ALLOWED_ACE(
-						XSID::Everyone,
-						{ "11111", DwordMeaningActiveDirectoryObject }
-					)
-				}},
-				{{
-					XSYSTEM_RESOURCE_ATTRIBUTE_ACE(
-						{{ L"boolean", { true }}}
-					)
-				}},
-				fiction_group
+					fiction_owner,
+					{{
+						XACCESS_DENIED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "00001", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid4
+						),
+						XACCESS_DENIED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "00010", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid7
+						),
+						XACCESS_DENIED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "00100", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid8
+						),
+						XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "00011", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid2
+						),
+						XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "11000", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid3
+						),
+						XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "11000", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid4
+						),
+						XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "10001", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid5
+						),
+						XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "10010", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid6
+						),
+						XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "10010", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid7
+						),
+						XACCESS_ALLOWED_CALLBACK_OBJECT_ACE(
+							XSID::Everyone,
+							{ "00110", DwordMeaningActiveDirectoryObject },
+							//XLocal(L"Title") == L"VP",
+							std::nullopt,
+							guid8
+						)
+					}},
+					std::nullopt,
+					fiction_group
 			};
 
-			auto [result, granted_access, access_status, granted_access_string] = check_access(
-				L"Object List test example with ACCESS_DENIED_CALLBACK_OBJECT_ACE and ACCESS_ALLOWED_CALLBACK_OBJECT_ACE types",
-				XTOKEN::Create(XSID::CurrentUser),
+			auto [result_1, granted_access_1, access_status_1, granted_access_string_1] = check_access_authz(
+				L"Advanced Callback Object List test example",
+				XTOKEN::Create(
+					XSID::CurrentUser,
+					XSID::Everyone,
+					{},
+					{},
+					std::nullopt,
+					std::nullopt,
+					std::nullopt,
+					{
+						{{L"Title", { L"VP" }}}
+					}
+				),
 				sd,
 				(DWORD)XBITSET<32>{ "11111", DwordMeaningActiveDirectoryObject },
 				false,
-				list
+				list_1
 			);
 
-			// Dispite the fact that there are ACEs specified particular access for "guid1" the granted
-			// access is still from latest ACE with type "ACCESS_ALLOWED_ACE"
-			Assert::AreEqual(granted_access_string[0], std::string("00000000000000000000000000011111"));
+			// Access checking process for such ACEs described in [MS-ADTS] 5.1.3.3.3
+			// https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/3da5080d-de25-4ac8-9f2b-982709253dfb
+			//
+			// guid1 (no direct "allows" for the root and for root the rule with "equal siblings" have no influence)
+			Assert::AreEqual(granted_access_string_1[0], std::string("00000000000000000000000000000000"));
+
+			// guid2 ("allows" from direct ACE plus all descendant nodes have equal rights, "denies" came from guid4)
+			Assert::AreEqual(granted_access_string_1[1], std::string("00000000000000000000000000011010"));
+
+			// guid3 ("allows" came from direct ACE plus from ancendant node guid2, no "denies")
+			Assert::AreEqual(granted_access_string_1[2], std::string("00000000000000000000000000011011"));
+
+			// guid4 ("allows" came from direct ACE plus from ancendant node guid2, "denies" from direct ACE for guid4)
+			Assert::AreEqual(granted_access_string_1[3], std::string("00000000000000000000000000011010"));
+
+			// guid5 ("allows" came from direct ACE plus descendant nodes (even if descendant nodes have equal "allows" for guid7 we have "denies" and that is why the nodes became "not equal"), "denies" from direct ACE for guid7)
+			Assert::AreEqual(granted_access_string_1[4], std::string("00000000000000000000000000010001"));
+
+			// guid6 ("allows" came from direct ACE plus ancendant node guid5, no "denies")
+			Assert::AreEqual(granted_access_string_1[5], std::string("00000000000000000000000000010011"));
+
+			// guid7 ("allows" came from direct ACE plus ancendant node guid5, "denies" came from direct ACE for guid7)
+			Assert::AreEqual(granted_access_string_1[6], std::string("00000000000000000000000000010001"));
+
+			// guid8 ("allows" came from direct ACE, "denies" from direct ACE)
+			Assert::AreEqual(granted_access_string_1[7], std::string("00000000000000000000000000000010"));
+			#pragma endregion
 		}
 	};
 }
